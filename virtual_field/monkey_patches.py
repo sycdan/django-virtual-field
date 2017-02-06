@@ -1,19 +1,17 @@
 # -*- coding: UTF-8
 import django
 
-from .utils import VirtualField
+from .decorators import VirtualField
 
 
 def _values(self, *fields):
-    real_fields = list(fields)
     annotations = {}
     for fname in fields:
-        v = self.model.__dict__.get(fname)
+        v = getattr(self.model, fname, None)
         if v and isinstance(v, VirtualField):
             annotations[v.name] = v.func(self.model)
-            real_fields.remove(fname)
-    clone = _values.original(self, *real_fields)
-    return clone.annotate(**annotations)
+    annoted_queryset = self.annotate(**annotations)
+    return _values.original(annoted_queryset, *fields)
 
 
 def apply_all():
